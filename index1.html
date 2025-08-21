@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OER Student Savings Calculator</title>
+  <style>
+    :root {
+      --radius: 14px;
+    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; line-height: 1.4; margin: 0; padding: 0; background: #f7f7fb; color: #111; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 24px; }
+    header { margin-bottom: 16px; }
+    h1 { font-size: clamp(1.25rem, 2.5vw, 1.6rem); margin: 0 0 6px; }
+    p.lead { margin: 0 0 12px; color: #333; }
+
+    .card { background: #fff; border-radius: var(--radius); box-shadow: 0 6px 18px rgba(0,0,0,.06); padding: 16px; margin-bottom: 16px; }
+    fieldset { border: 0; margin: 0; padding: 0; }
+    legend { font-weight: 600; margin-bottom: 8px; }
+
+    label { display: inline-block; font-weight: 600; margin-bottom: 6px; }
+    .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: end; }
+    .col-3 { grid-column: span 3; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-8 { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+
+    input[type="number"], input[type="text"], select {
+      width: 100%; border: 1px solid #d0d7de; border-radius: 10px; padding: 10px 12px; font-size: 16px; background: #fff;
+    }
+    input[type="checkbox"] { transform: scale(1.2); }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1; background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; user-select: none; font-weight: 600; }
+    .btn:hover { background: #f2f4f8; }
+    .btn.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+    .btn.primary:hover { filter: brightness(0.95); }
+    .btn.danger { border-color: #ef4444; color: #ef4444; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    th { text-align: left; font-size: 0.9rem; }
+
+    .muted { color: #555; font-size: 0.95rem; }
+    .help { color: #444; font-size: 0.9rem; }
+    .assumptions { font-size: 0.92rem; color: #333; }
+
+    .results { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .result { background: #0ea5e9; color: white; border-radius: 14px; padding: 16px; }
+    .result h3 { margin: 0 0 4px; font-size: 0.95rem; font-weight: 600; opacity: 0.95; }
+    .result p { margin: 0; font-size: clamp(1.15rem, 3.5vw, 1.6rem); font-weight: 800; letter-spacing: .2px; }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    footer { margin-top: 20px; color: #555; font-size: 0.9rem; }
+    details { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 10px 14px; }
+
+    @media (max-width: 700px) {
+      .row { grid-template-columns: repeat(6, 1fr); }
+      .col-8 { grid-column: span 6; }
+      .col-6 { grid-column: span 6; }
+      .col-4 { grid-column: span 6; }
+      .col-3 { grid-column: span 6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <header>
+      <h1>OER Student Savings Calculator</h1>
+      <p class="lead">Estimate student out‑of‑pocket savings when replacing paid textbooks with Open Educational Resources (OER). no tracking, client-side only.</p>
+    </header>
+
+    <div class="card" aria-describedby="assumption-note">
+      <fieldset class="row" style="row-gap: 8px;">
+        <legend class="sr-only">Cohort and currency</legend>
+        <div class="col-4">
+          <label for="cohort">Cohort size (number of students)</label>
+          <input id="cohort" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 180" value="120" />
+        </div>
+        <div class="col-4">
+          <label for="intakes">Intakes per year (optional)</label>
+          <input id="intakes" type="number" inputmode="numeric" min="1" step="1" value="1" />
+          <div class="help">Used to estimate annual savings if the subject runs multiple times a year.</div>
+        </div>
+        <div class="col-4">
+          <label for="currency">Currency</label>
+          <select id="currency" aria-label="Currency">
+            <option value="AUD" selected>AUD (A$)</option>
+            <option value="USD">USD ($)</option>
+            <option value="NZD">NZD (NZ$)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="card">
+      <div class="row" style="align-items:center;">
+        <div class="col-8">
+          <h2 style="margin:0; font-size:1.05rem;">Texts to be replaced by OER</h2>
+          <p class="muted" id="assumption-note">Enter each prescribed/recommended text you plan to replace. Edit purchase rates as needed.</p>
+        </div>
+        <div class="col-4" style="text-align:right; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" id="addPrescribed">+ Add prescribed</button>
+          <button class="btn" id="addRecommended">+ Add recommended</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto; margin-top:8px;">
+        <table aria-label="Books list">
+          <thead>
+            <tr>
+              <th scope="col">Type</th>
+              <th scope="col">Title (optional)</th>
+              <th scope="col">Price per copy</th>
+              <th scope="col">Purchase rate (%)</th>
+              <th scope="col">Qty per student</th>
+              <th scope="col">Remove</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn danger" id="clearAll" type="button">Clear all</button>
+        <button class="btn" id="printBtn" type="button">Print</button>
+        <button class="btn" id="copyBtn" type="button">Copy summary</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px; font-size:1.05rem;">Estimated savings</h2>
+      <div class="results" aria-live="polite" aria-atomic="true">
+        <div class="result">
+          <h3>Total cohort savings (this intake)</h3>
+          <p id="total"></p>
+        </div>
+        <div class="result">
+          <h3>Average saving per student</h3>
+          <p id="perStudent"></p>
+        </div>
+        <div class="result">
+          <h3>Estimated annual cohort savings</h3>
+          <p id="annual"></p>
+        </div>
+      </div>
+      <details style="margin-top:12px;">
+        <summary><strong>Breakdown by text</strong></summary>
+        <div id="breakdown" class="help" style="margin-top:8px;"></div>
+      </details>
+    </div>
+
+    <div class="card assumptions">
+      <h3 style="margin-top:0; font-size:1rem;">Assumptions & notes</h3>
+      <ul>
+        <li>Estimates reflect <strong>student out-of-pocket costs avoided</strong> when a paid text is replaced with an OER. Library acquisition/support costs are not included.</li>
+        <li>"Purchase rate" is the % of students likely to buy the text; defaults are 80% for prescribed and 30% for recommended, but you can edit based on your context.</li>
+        <li>Quantity per student is usually 1; change if a bundle or multiple volumes are normally purchased.</li>
+        <li>All calculations are client-side; no data is collected or transmitted.</li>
+      </ul>
+    </div>
+
+    <footer>
+      <em>Tip:</em> You can embed this page in a LibGuide via an <code>&lt;iframe&gt;</code>. Title attribute is included for accessibility.
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      const rowsEl = document.getElementById('rows');
+      const totalEl = document.getElementById('total');
+      const perStudentEl = document.getElementById('perStudent');
+      const annualEl = document.getElementById('annual');
+      const breakdownEl = document.getElementById('breakdown');
+      const cohortEl = document.getElementById('cohort');
+      const intakesEl = document.getElementById('intakes');
+      const currencyEl = document.getElementById('currency');
+
+      function currencyFormatter(code){
+        try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }); }
+        catch(e) { return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' }); }
+      }
+
+      function rowTemplate({type='Prescribed', title='', price=0, rate= type==='Prescribed' ? 80 : 30, qty=1}){
+        const id = 'r' + Math.random().toString(36).slice(2,8);
+        return `
+          <tr data-id="${id}" data-type="${type}">
+            <td>
+              <select aria-label="Text type" class="typeSel">
+                <option ${type==='Prescribed'?'selected':''}>Prescribed</option>
+                <option ${type==='Recommended'?'selected':''}>Recommended</option>
+              </select>
+            </td>
+            <td>
+              <input type="text" aria-label="Title" class="title" placeholder="e.g., Research Methods (4e)" value="${escapeHtml(title)}" />
+            </td>
+            <td>
+              <input type="number" aria-label="Price" class="price" min="0" step="0.01" value="${Number(price)}" />
+            </td>
+            <td>
+              <input type="number" aria-label="Purchase rate percent" class="rate" min="0" max="100" step="1" value="${Number(rate)}" />
+            </td>
+            <td>
+              <input type="number" aria-label="Quantity per student" class="qty" min="1" step="1" value="${Number(qty)}" />
+            </td>
+            <td>
+              <button type="button" class="btn danger remove">Remove</button>
+            </td>
+          </tr>`;
+      }
+
+      function escapeHtml(str){
+        return String(str).replace(/[&<>"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+      }
+
+      function addRow(opts){
+        rowsEl.insertAdjacentHTML('beforeend', rowTemplate(opts));
+        recalc();
+      }
+
+      function clamp(n, min, max){ return Math.min(Math.max(n, min), max); }
+
+      function parseNum(val, fallback=0){
+        const n = Number(val);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function getRows(){
+        return [...rowsEl.querySelectorAll('tr')].map(tr => {
+          const type = tr.querySelector('.typeSel').value;
+          const title = tr.querySelector('.title').value.trim();
+          const price = parseNum(tr.querySelector('.price').value, 0);
+          const rate = clamp(parseNum(tr.querySelector('.rate').value, type==='Prescribed'?80:30), 0, 100);
+          const qty = clamp(parseNum(tr.querySelector('.qty').value, 1), 0, 999);
+          return {tr, type, title, price, rate, qty};
+        });
+      }
+
+      function recalc(){
+        const cohort = clamp(parseNum(cohortEl.value, 0), 0, 1_000_000);
+        const intakes = clamp(parseNum(intakesEl.value, 1), 1, 24);
+        const currency = currencyEl.value || 'AUD';
+        const fmt = currencyFormatter(currency);
+
+        const rows = getRows();
+        let total = 0;
+        const lines = [];
+        rows.forEach(({type, title, price, rate, qty}) => {
+          const expectedBuyers = cohort * (rate/100);
+          const saving = price * expectedBuyers * qty; // replacing paid with OER -> cost avoided
+          total += saving;
+          const label = title ? `${type}: ${title}` : `${type} text`;
+          lines.push(`${label} → ${fmt.format(saving)} (price ${fmt.format(price)} × qty ${qty} × ${rate}% of ${cohort} students)`);
+        });
+
+        const perStudent = cohort > 0 ? total / cohort : 0;
+        const annual = total * intakes;
+
+        totalEl.textContent = fmt.format(total);
+        perStudentEl.textContent = fmt.format(perStudent);
+        annualEl.textContent = fmt.format(annual);
+
+        breakdownEl.innerHTML = lines.length ? '<ul>' + lines.map(l => `<li>${l}</li>`).join('') + '</ul>' : '<em>No texts added yet.</em>';
+      }
+
+      rowsEl.addEventListener('input', (e)=>{
+        if(e.target.classList.contains('rate')){
+          e.target.value = clamp(parseNum(e.target.value, 0), 0, 100);
+        }
+        if(e.target.classList.contains('qty')){
+          e.target.value = clamp(parseNum(e.target.value, 1), 0, 999);
+        }
+        if(e.target.classList.contains('price')){
+          e.target.value = parseNum(e.target.value, 0);
+        }
+        recalc();
+      });
+
+      rowsEl.addEventListener('change', (e)=>{
+        if(e.target.classList.contains('typeSel')){
+          const tr = e.target.closest('tr');
+          const rateInput = tr.querySelector('.rate');
+          // When switching type, adjust default rate only if user hasn't customised (i.e., it's exactly the old default)
+          const oldType = tr.dataset.type || 'Prescribed';
+          const oldDefault = oldType==='Prescribed' ? 80 : 30;
+          if(parseNum(rateInput.value, oldDefault) === oldDefault){
+            rateInput.value = e.target.value==='Prescribed' ? 80 : 30;
+          }
+          tr.dataset.type = e.target.value;
+          recalc();
+        }
+      });
+
+      rowsEl.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('remove')){
+          e.target.closest('tr')?.remove();
+          recalc();
+        }
+      });
+
+      document.getElementById('addPrescribed').addEventListener('click', ()=> addRow({type:'Prescribed', price: 120, rate: 80, qty:1}));
+      document.getElementById('addRecommended').addEventListener('click', ()=> addRow({type:'Recommended', price: 75, rate: 30, qty:1}));
+
+      document.getElementById('clearAll').addEventListener('click', ()=> { rowsEl.innerHTML=''; recalc(); });
+      document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+      document.getElementById('copyBtn').addEventListener('click', ()=> {
+        const cohort = clamp(parseNum(cohortEl.value, 0), 0, 1_000_000);
+        const intakes = clamp(parseNum(intakesEl.value, 1), 1, 24);
+        const currency = currencyEl.value || 'AUD';
+        const fmt = currencyFormatter(currency);
+        const rows = getRows();
+        let total = 0; const parts = [];
+        rows.forEach(({type, title, price, rate, qty}) => {
+          const expectedBuyers = cohort * (rate/100);
+          const saving = price * expectedBuyers * qty;
+          total += saving;
+          const label = title ? `${type}: ${title}` : `${type} text`;
+          parts.push(`• ${label}: ${fmt.format(saving)} (price ${fmt.format(price)} × qty ${qty} × ${rate}% of ${cohort})`);
+        });
+        const perStudent = cohort > 0 ? total / cohort : 0;
+        const annual = total * intakes;
+        const summary = [`OER Student Savings (quick estimate)`, `Cohort size: ${cohort}`, `Intakes per year: ${intakes}`, `Total cohort saving (this intake): ${fmt.format(total)}`, `Average saving per student: ${fmt.format(perStudent)}`, `Estimated annual saving: ${fmt.format(annual)}`, '', 'Breakdown:', ...parts].join('\n');
+        navigator.clipboard.writeText(summary).then(()=>{
+          alert('Summary copied to clipboard.');
+        }).catch(()=>{
+          // Fallback: show prompt
+          window.prompt('Copy summary:', summary);
+        });
+      });
+
+      // Recalc on top-level input changes
+      [cohortEl, intakesEl, currencyEl].forEach(el => el.addEventListener('input', recalc));
+      currencyEl.addEventListener('change', recalc);
+
+      // Seed with one prescribed row
+      addRow({type:'Prescribed', title:'', price:120, rate:80, qty:1});
+      recalc();
+    })();
+  </script>
+</body>
+</html>
