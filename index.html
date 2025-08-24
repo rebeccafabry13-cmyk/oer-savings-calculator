@@ -74,16 +74,16 @@
     <div class="card" aria-describedby="assumption-note">
       <fieldset class="row" style="row-gap: 8px;">
         <legend class="sr-only">Cohort and currency</legend>
-        <div class="col-4">
+        <div class="col-3">
           <label for="cohort">Cohort size (number of students)</label>
           <input id="cohort" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g., 180" value="120" />
         </div>
-        <div class="col-4">
+        <div class="col-3">
           <label for="intakes">Intakes per year (optional)</label>
           <input id="intakes" type="number" inputmode="numeric" min="1" step="1" value="1" />
           <div class="help">Used to estimate annual savings if the subject runs multiple times a year.</div>
         </div>
-        <div class="col-4">
+        <div class="col-3">
           <label for="currency">Currency</label>
           <select id="currency" aria-label="Currency">
             <option value="AUD" selected>AUD (A$)</option>
@@ -341,5 +341,6 @@
   </script>
 </body>
 </html>
+
 
 
